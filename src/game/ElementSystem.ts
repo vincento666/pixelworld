@@ -11,23 +11,48 @@ export interface TurnReactionInfo {
   visualElement: Element;
 }
 
+/**
+ * 元素反应触发表（格式：敌人元素 > 玩家元素）
+ * 当敌人先手使用某元素，下回合玩家反制时触发对应反应
+ *
+ * 对应 SPEC：
+ *   FIRE 敌人 + THUNDER 玩家 → VAPORIZE  +50%
+ *   ICE   敌人 + FIRE   玩家 → MELT      +25%
+ *   THUNDER 敌人 + WATER 玩家 → CHAIN    +40%
+ *   WIND   敌人 + ICE   玩家 → FREEZE   +25%  (代码用 shatter 类型)
+ *   WATER  敌人 + THUNDER玩家 → SHOCK    +40%  (代码用 conductive 类型)
+ */
 const TURN_CHAIN_REACTIONS: Record<string, TurnReactionInfo> = {
   'fire>thunder': {
     reaction: 'vaporize',
     multiplier: 1.5,
-    label: 'VAPORIZE! +50%',
+    label: '🔥 蒸发 VAPORIZE +50%',
     visualElement: 'fire',
   },
   'ice>fire': {
     reaction: 'melt',
     multiplier: 1.25,
-    label: 'MELT! +25%',
+    label: '🔥 融化 MELT +25%',
     visualElement: 'ice',
   },
   'thunder>water': {
     reaction: 'strong_conductive',
     multiplier: 1.4,
-    label: 'CHAIN REACTION! +40%',
+    label: '⚡ 链式反应 CHAIN +40%',
+    visualElement: 'thunder',
+  },
+  // WIND敌人+ICE玩家 → FREEZE +25% (FREEZE 用 shatter 类型，冻结效果)
+  'wind>ice': {
+    reaction: 'shatter',
+    multiplier: 1.25,
+    label: '❄️ 冻结 FREEZE +25%',
+    visualElement: 'wind',
+  },
+  // WATER敌人+THUNDER玩家 → SHOCK +40% (SHOCK 用 conductive 类型)
+  'water>thunder': {
+    reaction: 'conductive',
+    multiplier: 1.4,
+    label: '⚡ 感电 SHOCK +40%',
     visualElement: 'thunder',
   },
 };
@@ -70,17 +95,21 @@ export function calculateElementalDamage(
   return Math.floor(damage);
 }
 
+/**
+ * 从 REACTION_TABLE 查找反应描述（用于战斗日志/飘字）
+ * 格式：a = 攻击方元素，b = 防守方元素
+ */
 export function getReactionText(a: Element | null, b: Element | null): string {
   if (!a || !b) return '';
   const reaction = REACTION_TABLE[a]?.[b];
   if (!reaction) return '';
   const map: Record<ReactionType, string> = {
-    melt: '融化',
-    vaporize: '蒸发',
-    conductive: '导电',
-    strong_conductive: '强导',
-    spread: '扩散',
-    shatter: '碎冰',
+    melt:              '融化 MELT +25%',
+    vaporize:          '蒸发 VAPORIZE +50%',
+    conductive:         '感电 SHOCK +40%',
+    strong_conductive:  '链式 CHAIN +40%',
+    spread:             '扩散 SPREAD +20%',
+    shatter:           '冻结 FREEZE +25%',
   };
   return map[reaction] ?? '';
 }
