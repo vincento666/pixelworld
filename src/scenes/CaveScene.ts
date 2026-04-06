@@ -279,8 +279,37 @@ export class CaveScene extends Phaser.Scene {
     } as any);
   }
 
-  private handleBattleWon() { this.battlePending = false; }
-  private handleBattleLost() { this.battlePending = false; }
+  private handleBattleWon() {
+    this.battlePending = false;
+    const remaining = this.enemies.filter(e => this.enemies.includes(e) && e.sprite.active);
+    if (remaining.length === 0) this.showMapClearedBanner();
+  }
+
+  private handleBattleLost() {
+    this.battlePending = false;
+    this.showGameOverOverlay();
+  }
+
+  private showMapClearedBanner() {
+    const d = 500;
+    this.add.rectangle(480, 160, 460, 90, 0x000000, 0.7).setDepth(d);
+    const panel = this.add.rectangle(480, 160, 450, 80, 0x0d0d1a, 0.95).setDepth(d+1).setStrokeStyle(2, 0x4ad66d);
+    this.add.text(480, 152, "✅ 本区敌人全灭！", {fontFamily:'Georgia',fontSize:'20px',color:'#4ad66d',fontStyle:'bold'}).setOrigin(0.5).setDepth(d+2);
+    this.add.text(480, 178, "找到 ▶ 传送门 前往下一区域", {fontFamily:'Courier New',fontSize:'14px',color:'#aaffaa'}).setOrigin(0.5).setDepth(d+2);
+    this.tweens.add({targets:panel, alpha:{from:0.6,to:1}, duration:600, yoyo:true, repeat:-1});
+  }
+
+  private showGameOverOverlay() {
+    const d = 500;
+    this.add.rectangle(480, 320, 960, 640, 0x000000, 0.72).setDepth(d);
+    const panel = this.add.rectangle(480, 320, 360, 220, 0x1a0808, 0.96).setDepth(d+1).setStrokeStyle(3, 0xe06b6b);
+    this.add.text(480, 264, "💀 冒险结束", {fontFamily:'Georgia',fontSize:'38px',color:'#ff8f8f',fontStyle:'bold'}).setOrigin(0.5).setDepth(d+2);
+    this.add.text(480, 310, "你倒在了冒险的路上...", {fontFamily:'Courier New',fontSize:'15px',color:'#cc8888'}).setOrigin(0.5).setDepth(d+2);
+    const btn = this.add.rectangle(480, 370, 180, 44, 0x8b2020, 1).setDepth(d+2).setInteractive({useHandCursor:true});
+    this.add.text(480, 370, "重新开始", {fontFamily:'Courier New',fontSize:'20px',color:'#ffffff',fontStyle:'bold'}).setOrigin(0.5).setDepth(d+3);
+    btn.on('pointerdown', () => this.scene.restart());
+    this.tweens.add({targets:panel, x:'+4', duration:60, yoyo:true, repeat:4});
+  }
 
   private transitionTo(mapId: string, gx?: number, gy?: number) {
     if (this.battlePending) return;
@@ -315,3 +344,4 @@ export class CaveScene extends Phaser.Scene {
     this.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1800, onComplete: () => t.destroy() });
   }
 }
+

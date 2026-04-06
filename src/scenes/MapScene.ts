@@ -357,10 +357,55 @@ export class MapScene extends Phaser.Scene {
 
   private handleBattleWon() {
     this.battlePending = false;
+    // Check if all enemies on this map are defeated
+    const remaining = this.enemies.filter(e => this.enemies.includes(e) && e.sprite.active);
+    if (remaining.length === 0) {
+      this.showMapClearedBanner();
+    }
   }
 
   private handleBattleLost() {
     this.battlePending = false;
+    this.showGameOverOverlay();
+  }
+
+  private showMapClearedBanner() {
+    const depth = 500;
+    const bg = this.add.rectangle(480, 160, 460, 90, 0x000000, 0.7).setDepth(depth);
+    const banner = this.add.rectangle(480, 160, 450, 80, 0x1a3a1a, 0.95)
+      .setDepth(depth + 1).setStrokeStyle(2, 0x4ad66d);
+    const text = this.add.text(480, 152, '✅ 本区敌人全灭！', {
+      fontFamily: 'Georgia', fontSize: '20px', color: '#4ad66d', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 2);
+    const sub = this.add.text(480, 178, '找到 ▶ 传送门 前往下一区域', {
+      fontFamily: 'Courier New', fontSize: '14px', color: '#aaffaa',
+    }).setOrigin(0.5).setDepth(depth + 2);
+    // Pulse animation
+    this.tweens.add({ targets: banner, alpha: { from: 0.6, to: 1 }, duration: 600, yoyo: true, repeat: -1 });
+  }
+
+  private showGameOverOverlay() {
+    const depth = 500;
+    const bg = this.add.rectangle(480, 320, 960, 640, 0x000000, 0.72).setDepth(depth);
+    const panel = this.add.rectangle(480, 320, 360, 220, 0x1a0808, 0.96)
+      .setDepth(depth + 1).setStrokeStyle(3, 0xe06b6b);
+    const title = this.add.text(480, 264, '💀 冒险结束', {
+      fontFamily: 'Georgia', fontSize: '38px', color: '#ff8f8f', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 2);
+    const sub = this.add.text(480, 310, '你倒在了冒险的路上...', {
+      fontFamily: 'Courier New', fontSize: '15px', color: '#cc8888',
+    }).setOrigin(0.5).setDepth(depth + 2);
+
+    const btn = this.add.rectangle(480, 370, 180, 44, 0x8b2020, 1)
+      .setDepth(depth + 2).setInteractive({ useHandCursor: true });
+    const btnTxt = this.add.text(480, 370, '重新开始', {
+      fontFamily: 'Courier New', fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(depth + 3);
+    btn.on('pointerdown', () => {
+      this.scene.restart();
+    });
+    // Shake animation on panel
+    this.tweens.add({ targets: panel, x: '+4', duration: 60, yoyo: true, repeat: 4 });
   }
 
   private transitionToPortal(portal: { targetMap: string; targetGX?: number; targetGY?: number }) {
