@@ -176,9 +176,9 @@ Title Screen
 
 | System | Status |
 |--------|--------|
-| Map Scene (isometric) | ✅ Done |
+| Map Scene (grass) | ✅ Done |
 | Player movement (WASD) | ✅ Done |
-| Enemy trigger (Enter) | ✅ Done |
+| Enemy trigger (collision) | ✅ Done |
 | Battle layout (left-right) | ✅ Done |
 | Card hand (5 cards) | ✅ Done |
 | Card selection (1-5) | ✅ Done |
@@ -189,16 +189,63 @@ Title Screen
 | X discard + draw | ✅ Done |
 | MP cost & affordability | ✅ Done |
 | MP regen per round | ✅ Done |
-| Element reactions | ✅ Done |
+| Element reactions (5 reactions) | ✅ Done |
 | Reaction particles | ✅ Done |
 | Damage/heal particles | ✅ Done |
 | Enemy defeat (sprite destroy) | ✅ Done |
 | Victory / Defeat flow | ✅ Done |
+| **Multi-map data registry** | ✅ Done |
+| **Cave map + transitions** | ✅ Done |
+| **Treasure chest system** | ✅ Done |
+| **Tavern scene (events overlay)** | ✅ Done |
 | Enemy persistence on map | 🔲 TODO |
-| Multiple map areas | 🔲 TODO |
-| Enemy AI (more than basic) | 🔲 TODO |
 | Player leveling / soul upgrade | 🔲 TODO |
 | Sound / BGM | 🔲 TODO |
+
+## 6.1 Map System Architecture
+
+### Map Registry
+All maps defined in `src/game/map-registry.ts`:
+```typescript
+interface MapDefinition {
+  id: 'grass' | 'cave' | 'dungeon';
+  name: string;
+  tiles: TileType[][];        // 2D grid
+  enemies: EnemySpawn[];       // positions + enemy type
+  portals: Portal[];           // tile → target map
+  treasures: Treasure[];       // position → reward
+  bgColor: number;            // background tint
+}
+```
+
+### Tile Types
+| ID | Walkable | Trigger |
+|----|----------|---------|
+| 0 GRASS | ✅ | — |
+| 1 WALL | ❌ | — |
+| 2 PATH | ✅ | — |
+| 3 PORTAL | ✅ | → switch scene |
+| 4 WATER | ❌ | — |
+| 5 CHEST | ✅ | → open chest + give reward |
+| 6 BUILDING | ✅ | → open tavern/event overlay |
+
+### Scene Lifecycle
+```
+MapScene (grass)
+  → Player walks onto PORTAL tile
+  → scene.start('CaveScene')
+  → Player walks onto PORTAL tile (exit)
+  → scene.start('MapScene')
+```
+
+### Treasure Reward Pool
+```typescript
+type TreasureReward =
+  | { type: 'hp_restore';    value: 20 }    // restore 20 HP
+  | { type: 'mp_restore';    value: 15 }    // restore 15 MP
+  | { type: 'buff';          id: 'atk_up'; duration: 3 }  // +10% atk, 3 battles
+  | { type: 'card';          cardId: string }           // gain random card
+```
 
 ---
 

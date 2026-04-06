@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { MAP_REGISTRY, TILE, type MapDefinition, type Treasure } from '../game/map-registry';
+import { MAP_REGISTRY, TILE, type Treasure } from '../game/map-registry';
 import { sceneEvents } from '../game/events';
-import { showTreasureUI } from '../game/treasure-system';
-import { pickRandomEvent, showEventOverlay } from '../game/event-overlay';
+import { showEventOverlay, pickRandomEvent } from '../game/event-overlay';
 import { buildMapSprites } from '../game/sprites';
 
 const TILE_SIZE = 56;
@@ -16,63 +15,44 @@ interface EnemyActor {
   label: Phaser.GameObjects.Text;
 }
 
-interface TreasureActor {
-  treasure: Treasure;
-  sprite: Phaser.Physics.Arcade.Image;
-}
-
-interface PortalActor {
-  sprite: Phaser.Physics.Arcade.Image;
-  targetMap: string;
-  targetGX?: number;
-  targetGY?: number;
-}
-
-interface BuildingActor {
-  sprite: Phaser.Physics.Arcade.Image;
-}
-
-export class MapScene extends Phaser.Scene {
-  private mapDef!: MapDefinition;
+export class CaveScene extends Phaser.Scene {
+  private mapDef = MAP_REGISTRY['cave'];
   private player!: Phaser.Physics.Arcade.Image;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { up: Phaser.Input.Keyboard.Key; down: Phaser.Input.Keyboard.Key; left: Phaser.Input.Keyboard.Key; right: Phaser.Input.Keyboard.Key };
   private wallGroup!: Phaser.Physics.Arcade.StaticGroup;
-  private portalGroup!: Phaser.Physics.Arcade.StaticGroup;
   private enemies: EnemyActor[] = [];
-  private treasureActors: TreasureActor[] = [];
-  private portalActors: PortalActor[] = [];
-  private buildingActors: BuildingActor[] = [];
   private battlePending = false;
-  private pendingPortal: { targetMap: string; targetGX?: number; targetGY?: number } | null = null;
   private mapNameText!: Phaser.GameObjects.Text;
-  private hintText!: Phaser.GameObjects.Text;
 
   constructor() {
-    super({ key: 'MapScene' });
+    super({ key: 'CaveScene' });
   }
 
-  init() {
-    this.mapDef = MAP_REGISTRY['grass'];
+  init(data: { spawnGX?: number; spawnGY?: number }) {
+    this._spawnGX = data.spawnGX ?? 1;
+    this._spawnGY = data.spawnGY ?? 1;
   }
 
-  create() {
+  private _spawnGX = 1;
+  private _spawnGY = 1;
+
+  create(data: { spawnGX?: number; spawnGY?: number } = {}) {
     buildMapSprites(this);
-    this.cameras.main.setBackgroundColor(
-      '#' + this.mapDef.bgColor.toString(16).padStart(6, '0')
-    );
+    this.cameras.main.setBackgroundColor('#0d0d1a');
+
     this.wallGroup = this.physics.add.staticGroup();
-    this.portalGroup = this.physics.add.staticGroup();
     this.enemies = [];
-    this.treasureActors = [];
-    this.portalActors = [];
-    this.buildingActors = [];
     this.battlePending = false;
+
+    if (data.spawnGX != null) this._spawnGX = data.spawnGX;
+    if (data.spawnGY != null) this._spawnGY = data.spawnGY;
 
     this.drawTiles();
     this.createWalls();
     this.createPortals();
     this.createTreasures();
+    this.createBuildings();
     this.createPlayer();
     this.createEnemies();
     this.createHud();
@@ -93,30 +73,23 @@ export class MapScene extends Phaser.Scene {
 
   private drawTiles() {
     const g = this.add.graphics();
-    const { tiles, wallColor, bgColor } = this.mapDef;
-    const rows = tiles.length;
-    const cols = tiles[0].length;
-
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
+    const { tiles, wallColor } = this.mapDef;
+    for (let row = 0; row < tiles.length; row++) {
+      for (let col = 0; col < tiles[0].length; col++) {
         const t = tiles[row][col];
         const x = MAP_OFFSET_X + col * TILE_SIZE;
         const y = MAP_OFFSET_Y + row * TILE_SIZE;
-
         if (t === TILE.WALL) {
           g.fillStyle(wallColor, 1);
           g.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-          g.lineStyle(1, 0x333344, 0.5);
+          g.lineStyle(1, 0x222233, 0.5);
           g.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
         } else if (t === TILE.PATH) {
-          g.fillStyle(0x7a5c3a, 1);
+          g.fillStyle(0x5a4a3a, 1);
           g.fillRect(x, y, TILE_SIZE, TILE_SIZE);
         } else {
-          // grass
-          g.fillStyle(bgColor, 1);
+          g.fillStyle(0x0d0d1a, 1);
           g.fillRect(x, y, TILE_SIZE, TILE_SIZE);
-          g.lineStyle(1, 0x2a4a2a, 0.3);
-          g.strokeRect(x, y, TILE_SIZE, TILE_SIZE);
         }
       }
     }
@@ -124,9 +97,8 @@ export class MapScene extends Phaser.Scene {
 
   private createWalls() {
     const { tiles } = this.mapDef;
-    const rows = tiles.length, cols = tiles[0].length;
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < cols; col++) {
+    for (let row = 0; row < tiles.length; row++) {
+      for (let col = 0; col < tiles[0].length; col++) {
         if (tiles[row][col] !== TILE.WALL) continue;
         const wall = this.wallGroup.create(
           MAP_OFFSET_X + col * TILE_SIZE + TILE_SIZE / 2,
@@ -149,9 +121,6 @@ export class MapScene extends Phaser.Scene {
       );
       sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
       sprite.refreshBody();
-      this.portalActors.push({ sprite, targetMap: portal.targetMap, targetGX: portal.targetGX, targetGY: portal.targetGY });
-
-      // Animate portal glow
       this.tweens.add({
         targets: sprite,
         alpha: { from: 0.7, to: 1.0 },
@@ -161,16 +130,12 @@ export class MapScene extends Phaser.Scene {
         repeat: -1,
         ease: 'Sine.easeInOut',
       });
-
-      // Add "→" hint text above portal
       this.add.text(sprite.x, sprite.y - 34, '▶ 传送', {
         fontFamily: 'Courier New', fontSize: '11px', color: '#9966ff',
         backgroundColor: '#00000088', padding: { x: 4, y: 2 },
       }).setOrigin(0.5);
-
       this.physics.add.overlap(this.player, sprite, () => {
-        if (this.battlePending) return;
-        this.transitionToPortal(portal);
+        if (!this.battlePending) this.transitionTo(portal.targetMap, portal.targetGX, portal.targetGY);
       });
     }
   }
@@ -185,14 +150,10 @@ export class MapScene extends Phaser.Scene {
       );
       sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
       sprite.refreshBody();
-      this.treasureActors.push({ treasure, sprite });
-
-      // Floating "?" hint
       this.add.text(sprite.x, sprite.y - 34, '💰 宝箱', {
         fontFamily: 'Courier New', fontSize: '11px', color: '#ffcc33',
         backgroundColor: '#00000088', padding: { x: 4, y: 2 },
       }).setOrigin(0.5);
-
       this.physics.add.overlap(this.player, sprite, () => {
         if (this.battlePending) return;
         this.openTreasure(treasure, sprite);
@@ -201,36 +162,13 @@ export class MapScene extends Phaser.Scene {
   }
 
   private createBuildings() {
-    const { tiles } = this.mapDef;
-    for (let row = 0; row < tiles.length; row++) {
-      for (let col = 0; col < tiles[0].length; col++) {
-        if (tiles[row][col] !== TILE.BUILDING) continue;
-        const x = MAP_OFFSET_X + col * TILE_SIZE + TILE_SIZE / 2;
-        const y = MAP_OFFSET_Y + row * TILE_SIZE + TILE_SIZE / 2;
-        const sprite = this.physics.add.staticImage(x, y, 'sprite_building');
-        sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
-        sprite.refreshBody();
-        this.buildingActors.push({ sprite });
-
-        this.add.text(x, y - 34, '🏠 酒馆', {
-          fontFamily: 'Courier New', fontSize: '11px', color: '#aaffcc',
-          backgroundColor: '#00000088', padding: { x: 4, y: 2 },
-        }).setOrigin(0.5);
-
-        this.physics.add.overlap(this.player, sprite, () => {
-          if (this.battlePending) return;
-          this.enterTavern();
-        });
-      }
-    }
+    // No buildings in cave for now
   }
 
   private createPlayer() {
-    // Default start position
-    const startGX = 1, startGY = 1;
     this.player = this.physics.add.image(
-      MAP_OFFSET_X + startGX * TILE_SIZE + TILE_SIZE / 2,
-      MAP_OFFSET_Y + startGY * TILE_SIZE + TILE_SIZE / 2,
+      MAP_OFFSET_X + this._spawnGX * TILE_SIZE + TILE_SIZE / 2,
+      MAP_OFFSET_Y + this._spawnGY * TILE_SIZE + TILE_SIZE / 2,
       '__WHITE'
     );
     this.player.setTint(0x53a7ff);
@@ -244,35 +182,36 @@ export class MapScene extends Phaser.Scene {
 
   private createEnemies() {
     const defeated = (this.registry.get('defeatedEnemies') as string[] | undefined) ?? [];
-    for (const enemyDef of this.mapDef.enemies) {
-      if (defeated.includes(enemyDef.gx + '_' + enemyDef.gy)) continue;
+    const colorMap: Record<string, number> = {
+      goblin_grunt:  0x6ea34c,
+      goblin_archer: 0x8fbf5b,
+      goblin_shaman: 0xaa66cc,
+    };
+    const nameMap: Record<string, string> = {
+      goblin_grunt:  '哥布林战士',
+      goblin_archer: '哥布林弓手',
+      goblin_shaman: '哥布林萨满',
+    };
+    const hpMap: Record<string, number> = {
+      goblin_grunt: 30, goblin_archer: 20, goblin_shaman: 38,
+    };
 
-      const colorMap: Record<string, number> = {
-        goblin_grunt:  0x6ea34c,
-        goblin_archer: 0x8fbf5b,
-        goblin_shaman: 0xaa66cc,
-      };
-      const color = colorMap[enemyDef.type] ?? 0x6ea34c;
-      const nameMap: Record<string, string> = {
-        goblin_grunt:  '哥布林战士',
-        goblin_archer: '哥布林弓手',
-        goblin_shaman: '哥布林萨满',
-      };
-      const name = nameMap[enemyDef.type] ?? enemyDef.type;
-      const id = `${enemyDef.gx}_${enemyDef.gy}`;
+    for (const def of this.mapDef.enemies) {
+      const id = `cave_${def.gx}_${def.gy}`;
+      if (defeated.includes(id)) continue;
 
       const sprite = this.physics.add.image(
-        MAP_OFFSET_X + enemyDef.gx * TILE_SIZE + TILE_SIZE / 2,
-        MAP_OFFSET_Y + enemyDef.gy * TILE_SIZE + TILE_SIZE / 2,
+        MAP_OFFSET_X + def.gx * TILE_SIZE + TILE_SIZE / 2,
+        MAP_OFFSET_Y + def.gy * TILE_SIZE + TILE_SIZE / 2,
         '__WHITE'
       );
-      sprite.setTint(color);
+      sprite.setTint(colorMap[def.type] ?? 0x6ea34c);
       sprite.setDisplaySize(26, 26);
       sprite.setImmovable(true);
       sprite.body.setAllowGravity(false);
       sprite.body.moves = false;
 
-      const label = this.add.text(sprite.x, sprite.y - 28, name, {
+      const label = this.add.text(sprite.x, sprite.y - 28, nameMap[def.type] ?? def.type, {
         fontFamily: 'Courier New', fontSize: '12px', color: '#ffffff',
         backgroundColor: '#00000066', padding: { x: 4, y: 2 },
       }).setOrigin(0.5);
@@ -282,26 +221,17 @@ export class MapScene extends Phaser.Scene {
   }
 
   private createHud() {
-    const mapNameColor = this.mapDef.id === 'grass' ? '#4ad66d' : this.mapDef.id === 'cave' ? '#88ccff' : '#ffaa66';
     this.mapNameText = this.add.text(480, 16, `📍 ${this.mapDef.name}`, {
-      fontFamily: 'Georgia', fontSize: '20px', color: mapNameColor, fontStyle: 'bold',
+      fontFamily: 'Georgia', fontSize: '20px', color: '#88ccff', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
-
-    this.hintText = this.add.text(480, 44, 'WASD/方向键移动  ·  走近敌人触发战斗  ·  走近传送门/宝箱/酒馆触发事件', {
+    this.add.text(480, 44, 'WASD/方向键移动  ·  走近敌人触发战斗  ·  走近传送门返回', {
       fontFamily: 'Courier New', fontSize: '11px', color: '#556677',
     }).setOrigin(0.5, 0);
 
-    // Player HP/MP display
     const hp = this.registry.get('playerHP') ?? 80;
     const mp = this.registry.get('playerMP') ?? 30;
-    const maxHp = 80, maxMp = 30;
-
-    this.add.text(16, 16, `❤️ HP: ${hp}/${maxHp}`, {
-      fontFamily: 'Courier New', fontSize: '13px', color: '#ff6666',
-    });
-    this.add.text(16, 34, `💧 MP: ${mp}/${maxMp}`, {
-      fontFamily: 'Courier New', fontSize: '13px', color: '#66aaff',
-    });
+    this.add.text(16, 16, `❤️ HP: ${hp}/80`, { fontFamily: 'Courier New', fontSize: '13px', color: '#ff6666' });
+    this.add.text(16, 34, `💧 MP: ${mp}/30`, { fontFamily: 'Courier New', fontSize: '13px', color: '#66aaff' });
   }
 
   private createInput() {
@@ -315,20 +245,14 @@ export class MapScene extends Phaser.Scene {
   }
 
   update() {
-    if (this.battlePending) {
-      this.player.setVelocity(0, 0);
-      return;
-    }
-
+    if (this.battlePending) { this.player.setVelocity(0, 0); return; }
     const left  = (this.cursors.left?.isDown  || this.wasd.left.isDown)  ? -1 : 0;
     const right = (this.cursors.right?.isDown || this.wasd.right.isDown) ?  1 : 0;
     const up    = (this.cursors.up?.isDown    || this.wasd.up.isDown)    ? -1 : 0;
     const down  = (this.cursors.down?.isDown  || this.wasd.down.isDown)  ?  1 : 0;
-    const vx = (left + right) * PLAYER_SPEED;
-    const vy = (up + down) * PLAYER_SPEED;
-    this.player.setVelocity(vx, vy);
+    this.player.setVelocity((left + right) * PLAYER_SPEED, (up + down) * PLAYER_SPEED);
     const body = this.player.body as Phaser.Physics.Arcade.Body | null;
-    if (body && (vx !== 0 || vy !== 0)) {
+    if (body && (left + right !== 0 || up + down !== 0)) {
       body.velocity.normalize().scale(PLAYER_SPEED);
     }
   }
@@ -337,36 +261,30 @@ export class MapScene extends Phaser.Scene {
     if (this.battlePending) return;
     this.battlePending = true;
     this.player.setVelocity(0, 0);
-
-    const enemyDef = this.mapDef.enemies.find(e => `${e.gx}_${e.gy}` === enemyId);
+    const def = this.mapDef.enemies.find(e => `cave_${e.gx}_${e.gy}` === enemyId);
     const nameMap: Record<string, string> = {
-      goblin_grunt:  'Goblin Grunt',
-      goblin_archer: 'Goblin Archer',
-      goblin_shaman: 'Goblin Shaman',
+      goblin_grunt: 'Goblin Grunt', goblin_archer: 'Goblin Archer', goblin_shaman: 'Goblin Shaman',
+    };
+    const hpMap: Record<string, number> = {
+      goblin_grunt: 30, goblin_archer: 20, goblin_shaman: 38,
     };
     sceneEvents.emit('battleStart', {
-      enemy: enemyDef ? {
+      enemy: {
         id: enemyId,
-        name: nameMap[enemyDef.type] ?? enemyDef.type,
-        maxHP: enemyDef.type === 'goblin_shaman' ? 38 : enemyDef.type === 'goblin_grunt' ? 30 : 20,
+        name: nameMap[def?.type ?? 'goblin_grunt'] ?? 'Goblin',
+        maxHP: hpMap[def?.type ?? 'goblin_grunt'] ?? 30,
         color: 0x6ea34c,
         attackElements: ['fire'] as const,
-      } : { id: enemyId, name: 'Goblin', maxHP: 30, color: 0x6ea34c, attackElements: ['fire'] as const },
+      },
     } as any);
   }
 
-  private handleBattleWon() {
-    this.battlePending = false;
-  }
+  private handleBattleWon() { this.battlePending = false; }
+  private handleBattleLost() { this.battlePending = false; }
 
-  private handleBattleLost() {
-    this.battlePending = false;
-  }
-
-  private transitionToPortal(portal: { targetMap: string; targetGX?: number; targetGY?: number }) {
+  private transitionTo(mapId: string, gx?: number, gy?: number) {
     if (this.battlePending) return;
     this.battlePending = true;
-
     const overlay = this.add.rectangle(480, 320, 960, 640, 0x000000, 0).setDepth(200);
     this.tweens.add({
       targets: overlay,
@@ -374,29 +292,15 @@ export class MapScene extends Phaser.Scene {
       duration: 400,
       onComplete: () => {
         this.battlePending = false;
-        this.scene.start(portal.targetMap === 'cave' ? 'CaveScene' : 'MapScene', {
-          spawnGX: portal.targetGX,
-          spawnGY: portal.targetGY,
-        });
+        this.scene.start(mapId === 'grass' ? 'MapScene' : 'CaveScene', { spawnGX: gx, spawnGY: gy });
       },
     });
   }
 
   private openTreasure(treasure: Treasure, sprite: Phaser.Physics.Arcade.Image) {
     treasure.opened = true;
-    const idx = this.treasureActors.findIndex(t => t.treasure === treasure);
-    if (idx >= 0) this.treasureActors.splice(idx, 1);
+    this.tweens.add({ targets: sprite, y: '-=16', alpha: 0, duration: 500, onComplete: () => sprite.destroy() });
 
-    // Visual feedback: chest bounces then disappears
-    this.tweens.add({
-      targets: sprite,
-      y: '-=16',
-      alpha: 0,
-      duration: 500,
-      onComplete: () => sprite.destroy(),
-    });
-
-    // Apply reward
     const { applyReward } = require('../game/treasure-system');
     const hp = this.registry.get('playerHP') as number ?? 80;
     const mp = this.registry.get('playerMP') as number ?? 30;
@@ -404,39 +308,10 @@ export class MapScene extends Phaser.Scene {
     if (result.hpBarUpdate) this.registry.set('playerHP', result.hp);
     if (result.mpBarUpdate) this.registry.set('playerMP', result.mp);
 
-    // Show notification
-    this.showFloatingText(sprite.x, sprite.y - 20, result.notes.join(' '), '#ffcc33');
-
-    // Update HUD HP/MP display
-    this.children.getAll().filter((o: any) => o.text?.startsWith?.('❤️') || o.text?.startsWith?.('💧'))
-      .forEach((o: any) => o.destroy());
-    const newHp = this.registry.get('playerHP') as number ?? 80;
-    const newMp = this.registry.get('playerMP') as number ?? 30;
-    this.add.text(16, 16, `❤️ HP: ${newHp}/80`, { fontFamily: 'Courier New', fontSize: '13px', color: '#ff6666' });
-    this.add.text(16, 34, `💧 MP: ${newMp}/30`, { fontFamily: 'Courier New', fontSize: '13px', color: '#66aaff' });
-  }
-
-  private enterTavern() {
-    if (this.battlePending) return;
-    this.battlePending = true;
-    const event = pickRandomEvent();
-    showEventOverlay(this, event, 300);
-    this.time.delayedCall(800, () => {
-      this.battlePending = false;
-    });
-  }
-
-  private showFloatingText(x: number, y: number, text: string, color: string) {
-    const t = this.add.text(x, y, text, {
-      fontFamily: 'Courier New', fontSize: '14px', color,
+    const t = this.add.text(sprite.x, sprite.y - 20, result.notes.join(' '), {
+      fontFamily: 'Courier New', fontSize: '14px', color: '#ffcc33',
       backgroundColor: '#000000aa', padding: { x: 6, y: 3 },
     }).setOrigin(0.5).setDepth(400);
-    this.tweens.add({
-      targets: t,
-      y: y - 50,
-      alpha: 0,
-      duration: 1800,
-      onComplete: () => t.destroy(),
-    });
+    this.tweens.add({ targets: t, y: t.y - 50, alpha: 0, duration: 1800, onComplete: () => t.destroy() });
   }
 }
