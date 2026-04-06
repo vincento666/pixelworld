@@ -108,6 +108,9 @@ export class TitleScene extends Phaser.Scene {
 
     this.startBtn.on('pointerdown', () => {
       if (this.selectedIdx < 0) return;
+      // MapScene was auto-started by Phaser at boot (before TitleScene was shown),
+      // so stop it first, then start it fresh so init()+create() run properly.
+      this.scene.stop('MapScene');
       this.scene.stop('TitleScene');
       this.scene.start('MapScene');
     });

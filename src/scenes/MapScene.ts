@@ -57,6 +57,11 @@ export class MapScene extends Phaser.Scene {
   }
 
   create() {
+    // Explicitly configure camera to cover the full game viewport.
+    // This ensures the map renders correctly whether MapScene was started fresh
+    // or was auto-started by Phaser at boot (before the title screen was shown).
+    this.cameras.main.setViewport(0, 0, 960, 640);
+    this.cameras.main.setBounds(0, 0, 960, 640);
     this.cameras.main.setBackgroundColor(
       '#' + this.mapDef.bgColor.toString(16).padStart(6, '0')
     );
