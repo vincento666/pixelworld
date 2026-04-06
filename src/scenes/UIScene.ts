@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 interface DamageEvent { value: number; x: number; y: number; }
 interface HealEvent   { value: number; x: number; y: number; }
-interface ElementReactEvent { element: string; x: number; y: number; }
+interface ElementReactEvent { element: string; x: number; y: number; label?: string; }
 
 export class UIScene extends Phaser.Scene {
   constructor() { super({ key: 'UIScene' }); }
@@ -45,6 +45,7 @@ export class UIScene extends Phaser.Scene {
     // Element reaction particles
     this.game.events.on('elementReact', (data: ElementReactEvent) => {
       this.spawnElementParticles(data.element as string, data.x, data.y);
+      this.spawnReactionLabel(data);
     });
 
     // Victory
@@ -71,6 +72,41 @@ export class UIScene extends Phaser.Scene {
       case 'wind':    this.spawnWindParticles(x, y);   break;
       case 'water':   this.spawnWaterParticles(x, y); break;
       default:        this.spawnGenericParticles(x, y, 0xffdd44); break;
+    }
+  }
+
+  private spawnReactionLabel(data: ElementReactEvent) {
+    const color = this.getElementColor(data.element);
+    const label = data.label ?? data.element.toUpperCase();
+    const txt = this.add.text(data.x, data.y, label, {
+      fontFamily: 'Georgia',
+      fontSize: '30px',
+      color,
+      fontStyle: 'bold',
+      stroke: '#081018',
+      strokeThickness: 5,
+    }).setOrigin(0.5).setDepth(280);
+
+    this.tweens.add({
+      targets: txt,
+      y: data.y - 36,
+      alpha: 0,
+      scaleX: 1.08,
+      scaleY: 1.08,
+      duration: 900,
+      ease: 'Cubic.easeOut',
+      onComplete: () => txt.destroy(),
+    });
+  }
+
+  private getElementColor(element: string): string {
+    switch (element) {
+      case 'fire': return '#ff7a3c';
+      case 'thunder': return '#ffe45c';
+      case 'ice': return '#9fe8ff';
+      case 'wind': return '#7dffb0';
+      case 'water': return '#74a8ff';
+      default: return '#ffd84d';
     }
   }
 

@@ -40,6 +40,7 @@ const ELEMENT_NAMES: Record<Element, string> = {
   wind:     '风',
   water:    '水',
 };
+const ENEMY_ATTACK_ELEMENTS: Exclude<Element, 'physical'>[] = ['fire', 'ice', 'thunder', 'wind', 'water'];
 
 const DEFAULT_CARDS: SkillCard[] = [
   { id: 'strike',    name: 'Strike',      element: 'physical', damage: 18, mpCost: 0,  desc: 'Basic attack' },
@@ -393,6 +394,7 @@ export class BattleScene extends Phaser.Scene {
         this.game.events.emit('elementReact', {
           element: card.element,
           x: target.sx, y: target.sy,
+          label: reaction.label,
         });
       }
       if (card.element !== 'physical') {
@@ -472,7 +474,7 @@ export class BattleScene extends Phaser.Scene {
       this.time.delayedCall(delay, () => {
         if (this.phase !== 'enemy') return;
         const dmg = Phaser.Math.Between(5, 12);
-        const atkElement: Element = 'physical';
+        const atkElement = Phaser.Utils.Array.GetRandom(ENEMY_ATTACK_ELEMENTS);
         this.lastEnemyElement = atkElement;
 
         // Check reaction
@@ -484,10 +486,10 @@ export class BattleScene extends Phaser.Scene {
           this.game.events.emit('elementReact', {
             element: atkElement,
             x: 760, y: 370,
+            label: reaction.label,
           });
-        } else {
-          this.addLog(`* ${attacker.name} attacks! ${totalDmg} dmg`);
         }
+        this.addLog(`* ${attacker.name} attacks with ${atkElement}! ${totalDmg} dmg`);
         this.dealDamageToPlayer(totalDmg, atkElement);
       });
       delay += 700;
@@ -516,6 +518,7 @@ export class BattleScene extends Phaser.Scene {
     this.game.events.emit('victory');
     if (this.battleEnemyGX !== null && this.battleEnemyGY !== null) {
       const defeatedEnemyKey = `${this.battleEnemyGX},${this.battleEnemyGY}`;
+      this.registry.set('defeatedEnemyKey', defeatedEnemyKey);
       const defeatedEnemies = (this.registry.get('defeatedEnemies') as string[] | undefined) ?? [];
       if (!defeatedEnemies.includes(defeatedEnemyKey)) {
         this.registry.set('defeatedEnemies', [...defeatedEnemies, defeatedEnemyKey]);
@@ -529,7 +532,14 @@ export class BattleScene extends Phaser.Scene {
       fontFamily: 'Courier New', fontSize: '16px', color: '#888888',
     }).setOrigin(0.5).setDepth(100);
     this.input.keyboard!.once('keydown-ENTER', () => {
-      this.scene.start('MapScene', { preserveDefeatedEnemies: true });
+      if (this.battleEnemyGX !== null && this.battleEnemyGY !== null) {
+        this.scene.start('MapScene', {
+          enemyGX: this.battleEnemyGX,
+          enemyGY: this.battleEnemyGY,
+        });
+        return;
+      }
+      this.scene.start('MapScene');
     });
   }
 
