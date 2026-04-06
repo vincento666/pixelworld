@@ -4,6 +4,8 @@ import { sceneEvents } from '../game/events';
 import { showTreasureUI } from '../game/treasure-system';
 import { pickRandomEvent, showEventOverlay } from '../game/event-overlay';
 import { buildMapSprites } from '../game/sprites';
+import { BlobTerrain } from '../game/sprite-anim/blobTerrain';
+import { SpriteAnimator } from '../game/sprite-anim/SpriteAnimator';
 
 const TILE_SIZE = 56;
 const MAP_OFFSET_X = 32;
@@ -47,6 +49,11 @@ export class MapScene extends Phaser.Scene {
   private pendingPortal: { targetMap: string; targetGX?: number; targetGY?: number } | null = null;
   private mapNameText!: Phaser.GameObjects.Text;
   private hintText!: Phaser.GameObjects.Text;
+  // infiniteMap 集成
+  private terrain!: BlobTerrain;
+  private spriteAnimator!: SpriteAnimator;
+  private playerVisual!: Phaser.GameObjects.Sprite;
+  private currentFacing: 'up' | 'down' | 'left' | 'right' = 'down';
 
   constructor() {
     super({ key: 'MapScene' });
@@ -57,16 +64,25 @@ export class MapScene extends Phaser.Scene {
   }
 
   create() {
-    // Explicitly configure camera to cover the full game viewport.
-    // This ensures the map renders correctly whether MapScene was started fresh
-    // or was auto-started by Phaser at boot (before the title screen was shown).
+    // Camera must cover the full viewport to prevent black screen
     this.cameras.main.setViewport(0, 0, 960, 640);
     this.cameras.main.setBounds(0, 0, 960, 640);
     this.cameras.main.setBackgroundColor(
       '#' + this.mapDef.bgColor.toString(16).padStart(6, '0')
     );
-    // Generate map object textures (portal, chest, building) — NOT added to display list
+    // Generate map object textures (portal, chest, building)
     buildMapSprites(this);
+
+    // ── BlobTerrain: procedural infinite terrain (FBM noise) ──────────────
+    this.terrain = new BlobTerrain();
+    this.drawBlobTerrain();
+
+    // ── SpriteAnimator: animated character sprites (TINA.png) ─────────────
+    this.spriteAnimator = new SpriteAnimator(this);
+    this.spriteAnimator.load().catch(() => {
+      /* TINA.png not found — visual will use __WHITE */
+    });
+
     this.wallGroup = this.physics.add.staticGroup();
     this.portalGroup = this.physics.add.staticGroup();
     this.enemies = [];
@@ -96,7 +112,40 @@ export class MapScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       sceneEvents.off('battleWon', this.handleBattleWon, this);
       sceneEvents.off('battleLost', this.handleBattleLost, this);
+      this.playerVisual?.destroy();
+      this.terrain?.clearCache();
     });
+  }
+
+  // ── Procedural terrain layer via FBM noise ─────────────────────────────
+  private drawBlobTerrain() {
+    const G = this.add.graphics();
+    const startTX = Math.floor(MAP_OFFSET_X / 32);
+    const startTY = Math.floor(MAP_OFFSET_Y / 32);
+    const tileCols = Math.ceil((960 - MAP_OFFSET_X) / TILE_SIZE) + 1;
+    const tileRows = Math.ceil((640 - MAP_OFFSET_Y) / TILE_SIZE) + 1;
+
+    for (let row = 0; row < tileRows; row++) {
+      for (let col = 0; col < tileCols; col++) {
+        const tx = startTX + col;
+        const ty = startTY + row;
+        const tile = this.terrain.getTile(tx, ty);
+        const wx = MAP_OFFSET_X + col * TILE_SIZE;
+        const wy = MAP_OFFSET_Y + row * TILE_SIZE;
+
+        if (tile.type === 0) { // WATER — subtle blue tint
+          G.fillStyle(0x2266aa, 0.12);
+          G.fillRect(wx, wy, TILE_SIZE, TILE_SIZE);
+        } else if (tile.type === 2) { // MOUNTAIN — subtle brown tint
+          G.fillStyle(0x5a4a3a, 0.08);
+          G.fillRect(wx, wy, TILE_SIZE, TILE_SIZE);
+        } else { // FLAT — elevation-based grey-green variation
+          const g = Math.min(255, Math.floor(0x90 * tile.elevation + 0x60));
+          G.fillStyle(((g << 16) | (g << 8) | g) >>> 0, 0.05);
+          G.fillRect(wx, wy, TILE_SIZE, TILE_SIZE);
+        }
+      }
+    }
   }
 
   private drawTiles() {
@@ -120,7 +169,6 @@ export class MapScene extends Phaser.Scene {
           g.fillStyle(0x7a5c3a, 1);
           g.fillRect(x, y, TILE_SIZE, TILE_SIZE);
         } else {
-          // grass
           g.fillStyle(bgColor, 1);
           g.fillRect(x, y, TILE_SIZE, TILE_SIZE);
           g.lineStyle(1, 0x2a4a2a, 0.3);
@@ -159,7 +207,6 @@ export class MapScene extends Phaser.Scene {
       sprite.refreshBody();
       this.portalActors.push({ sprite, targetMap: portal.targetMap, targetGX: portal.targetGX, targetGY: portal.targetGY });
 
-      // Animate portal glow
       this.tweens.add({
         targets: sprite,
         alpha: { from: 0.7, to: 1.0 },
@@ -170,7 +217,6 @@ export class MapScene extends Phaser.Scene {
         ease: 'Sine.easeInOut',
       });
 
-      // Add "→" hint text above portal
       this.add.text(sprite.x, sprite.y - 34, '▶ 传送', {
         fontFamily: 'Courier New', fontSize: '11px', color: '#9966ff',
         backgroundColor: '#00000088', padding: { x: 4, y: 2 },
@@ -195,7 +241,6 @@ export class MapScene extends Phaser.Scene {
       sprite.refreshBody();
       this.treasureActors.push({ treasure, sprite });
 
-      // Floating "?" hint
       this.add.text(sprite.x, sprite.y - 34, '💰 宝箱', {
         fontFamily: 'Courier New', fontSize: '11px', color: '#ffcc33',
         backgroundColor: '#00000088', padding: { x: 4, y: 2 },
@@ -234,20 +279,24 @@ export class MapScene extends Phaser.Scene {
   }
 
   private createPlayer() {
-    // Default start position
     const startGX = 1, startGY = 1;
-    this.player = this.physics.add.image(
-      MAP_OFFSET_X + startGX * TILE_SIZE + TILE_SIZE / 2,
-      MAP_OFFSET_Y + startGY * TILE_SIZE + TILE_SIZE / 2,
-      '__WHITE'
-    );
-    this.player.setTint(0x53a7ff);
-    this.player.setDisplaySize(26, 26);
+    const px = MAP_OFFSET_X + startGX * TILE_SIZE + TILE_SIZE / 2;
+    const py = MAP_OFFSET_Y + startGY * TILE_SIZE + TILE_SIZE / 2;
+
+    // Physics body — collision, movement, world bounds
+    this.player = this.physics.add.image(px, py, '__WHITE');
+    this.player.setTint(0xffffff);
+    this.player.setAlpha(0.0); // invisible — rendered via playerVisual
     this.player.setCollideWorldBounds(true);
     this.player.setDrag(1200, 1200);
     this.player.setMaxVelocity(PLAYER_SPEED, PLAYER_SPEED);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     body.setSize(24, 24);
+
+    // Animated visual sprite — overlaid on physics body position
+    this.playerVisual = this.add.sprite(px, py, '__WHITE');
+    this.playerVisual.setDisplaySize(26, 26);
+    this.currentFacing = 'down';
   }
 
   private createEnemies() {
@@ -299,7 +348,6 @@ export class MapScene extends Phaser.Scene {
       fontFamily: 'Courier New', fontSize: '11px', color: '#556677',
     }).setOrigin(0.5, 0);
 
-    // Player HP/MP display
     const hp = this.registry.get('playerHP') ?? 80;
     const mp = this.registry.get('playerMP') ?? 30;
     const maxHp = 80, maxMp = 30;
@@ -323,7 +371,6 @@ export class MapScene extends Phaser.Scene {
   }
 
   private createMapHint() {
-    // Big control hint at bottom of screen
     const panel = this.add.graphics();
     panel.fillStyle(0x000000, 0.75);
     panel.fillRect(0, 580, 960, 60);
@@ -331,13 +378,11 @@ export class MapScene extends Phaser.Scene {
       fontFamily: 'Courier New', fontSize: '15px', color: '#ffffff',
     }).setOrigin(0.5, 0.5);
 
-    // Map name
     this.add.text(480, 50, '📍 ' + this.mapDef.name, {
       fontFamily: 'Georgia', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
       backgroundColor: '#00000088',
     }).setOrigin(0.5, 0);
 
-    // Enemy count reminder
     const alive = this.mapDef.enemies.length;
     this.add.text(480, 80, '⚔ ' + alive + ' 个敌人在此区域', {
       fontFamily: 'Courier New', fontSize: '14px', color: '#ffaa66',
@@ -361,6 +406,27 @@ export class MapScene extends Phaser.Scene {
     const body = this.player.body as Phaser.Physics.Arcade.Body | null;
     if (body && (vx !== 0 || vy !== 0)) {
       body.velocity.normalize().scale(PLAYER_SPEED);
+    }
+
+    // ── Sync visual sprite + drive animation from WASD direction ──────────
+    let facing: 'up' | 'down' | 'left' | 'right' = this.currentFacing;
+    if (vx < 0) facing = 'left';
+    else if (vx > 0) facing = 'right';
+    else if (vy < 0) facing = 'up';
+    else if (vy > 0) facing = 'down';
+    this.currentFacing = facing;
+
+    if (this.playerVisual) {
+      // Follow physics body
+      this.playerVisual.setPosition(this.player.x, this.player.y);
+      const isMoving = vx !== 0 || vy !== 0;
+      if (this.spriteAnimator) {
+        if (isMoving) {
+          this.spriteAnimator.playWalk(this.playerVisual, facing);
+        } else {
+          this.spriteAnimator.playIdle(this.playerVisual, facing);
+        }
+      }
     }
   }
 
@@ -388,7 +454,6 @@ export class MapScene extends Phaser.Scene {
 
   private handleBattleWon() {
     this.battlePending = false;
-    // Check if all enemies on this map are defeated
     const remaining = this.enemies.filter(e => this.enemies.includes(e) && e.sprite.active);
     if (remaining.length === 0) {
       this.showMapClearedBanner();
@@ -411,7 +476,6 @@ export class MapScene extends Phaser.Scene {
     const sub = this.add.text(480, 178, '找到 ▶ 传送门 前往下一区域', {
       fontFamily: 'Courier New', fontSize: '14px', color: '#aaffaa',
     }).setOrigin(0.5).setDepth(depth + 2);
-    // Pulse animation
     this.tweens.add({ targets: banner, alpha: { from: 0.6, to: 1 }, duration: 600, yoyo: true, repeat: -1 });
   }
 
@@ -435,7 +499,6 @@ export class MapScene extends Phaser.Scene {
     btn.on('pointerdown', () => {
       this.scene.restart();
     });
-    // Shake animation on panel
     this.tweens.add({ targets: panel, x: '+4', duration: 60, yoyo: true, repeat: 4 });
   }
 
@@ -463,7 +526,6 @@ export class MapScene extends Phaser.Scene {
     const idx = this.treasureActors.findIndex(t => t.treasure === treasure);
     if (idx >= 0) this.treasureActors.splice(idx, 1);
 
-    // Visual feedback: chest bounces then disappears
     this.tweens.add({
       targets: sprite,
       y: '-=16',
@@ -472,7 +534,6 @@ export class MapScene extends Phaser.Scene {
       onComplete: () => sprite.destroy(),
     });
 
-    // Apply reward
     const { applyReward } = require('../game/treasure-system');
     const hp = this.registry.get('playerHP') as number ?? 80;
     const mp = this.registry.get('playerMP') as number ?? 30;
@@ -480,10 +541,8 @@ export class MapScene extends Phaser.Scene {
     if (result.hpBarUpdate) this.registry.set('playerHP', result.hp);
     if (result.mpBarUpdate) this.registry.set('playerMP', result.mp);
 
-    // Show notification
     this.showFloatingText(sprite.x, sprite.y - 20, result.notes.join(' '), '#ffcc33');
 
-    // Update HUD HP/MP display
     this.children.getAll().filter((o: any) => o.text?.startsWith?.('❤️') || o.text?.startsWith?.('💧'))
       .forEach((o: any) => o.destroy());
     const newHp = this.registry.get('playerHP') as number ?? 80;
