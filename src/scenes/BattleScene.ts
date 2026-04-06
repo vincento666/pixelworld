@@ -48,6 +48,10 @@ export class BattleScene extends Phaser.Scene {
   private mpBar!: MPBar;
   private cardHand!: CardHand;
   private turnIndicator!: TurnIndicator;
+  private hpText!: Phaser.GameObjects.Text;
+  private mpText!: Phaser.GameObjects.Text;
+  private enemyCountText!: Phaser.GameObjects.Text;
+  private totalEnemyCount!: number;
   private logText!: Phaser.GameObjects.Text;
   private instructionsText!: Phaser.GameObjects.Text;
   private overlayContainer?: Phaser.GameObjects.Container;
@@ -105,7 +109,8 @@ export class BattleScene extends Phaser.Scene {
     this.refreshHand();
 
     this.game.events.emit('battleStart');
-    this.addLog('Battle started.');
+    this.totalEnemyCount = this.enemyViews.length;
+    this.addLog('\u2694 战斗开始！共 ' + this.totalEnemyCount + ' 个敌人，消灭他们！');
   }
 
   update() {
@@ -200,6 +205,11 @@ export class BattleScene extends Phaser.Scene {
 
     this.hpBar = new HPBar({ scene: this, x: 630, y: 18, width: 210, height: 18 });
     this.mpBar = new MPBar({ scene: this, x: 630, y: 48, width: 210, height: 14 });
+    this.hpText = this.add.text(634, 18, 'HP 80/80', { fontFamily: 'Courier New', fontSize: '12px', color: '#ffaaaa' });
+    this.mpText = this.add.text(634, 48, 'MP 30/30', { fontFamily: 'Courier New', fontSize: '12px', color: '#aaaaff' });
+    const enemyTotal = this.enemyViews.length;
+    this.enemyCountText = this.add.text(480, 8, `敌人: ${enemyTotal}/${enemyTotal}`, { fontFamily: 'Courier New', fontSize: '13px', color: '#ffaa66' }).setOrigin(0.5, 0);
+    this.add.text(480, 28, '🎯 目标: 消灭所有敌人！', { fontFamily: 'Courier New', fontSize: '12px', color: '#ffcc44' }).setOrigin(0.5, 0);
 
     this.instructionsText = this.add.text(24, 88, '1-5 Select  ENTER Use  X Discard & Draw', {
       fontFamily: 'Courier New',
@@ -298,9 +308,11 @@ export class BattleScene extends Phaser.Scene {
     this.renderEnemyHPBars();
 
     if (view.enemy.hp <= 0) {
-      this.addLog(`${view.enemy.name} was defeated.`);
+      const remaining = this.enemyViews.filter(function(e){return e.enemy.hp>0;}).length;
+      this.addLog(view.enemy.name + ' 被击败！  敌人剩余: ' + remaining + '/' + this.totalEnemyCount);
       view.sprite.setTint(0x333333);
       view.shadow.setVisible(false);
+      if (this.enemyCountText) this.enemyCountText.setText('敌人: ' + remaining + '/' + this.totalEnemyCount);
     }
 
     if (this.enemyViews.every((entry) => entry.enemy.hp <= 0)) {
@@ -478,6 +490,10 @@ export class BattleScene extends Phaser.Scene {
   private refreshPlayerUi() {
     this.hpBar.setValue(this.playerHP, PLAYER_MAX_HP);
     this.mpBar.setValue(this.playerMP, PLAYER_MAX_MP);
+    this.hpText.setText('HP ' + this.playerHP + '/' + PLAYER_MAX_HP);
+    this.mpText.setText('MP ' + this.playerMP + '/' + PLAYER_MAX_MP);
+    const alive = this.enemyViews.filter(function(e){return e.enemy.hp>0;}).length;
+    if (this.enemyCountText) this.enemyCountText.setText('敌人: ' + alive + '/' + this.enemyViews.length);
   }
 
   private refreshHand() {
