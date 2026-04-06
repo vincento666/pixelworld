@@ -65,6 +65,12 @@ export class BootScene extends Phaser.Scene {
   private generateTextures() {
     this.createPlayerSprite('player_sprite', '#e8c49a');
     this.createGoblinSprite('enemy_goblin');
+    // White pixel texture for map/entity placeholders
+    const G = this.add.graphics();
+    G.fillStyle(0xffffff, 1);
+    G.fillRect(0, 0, 4, 4);
+    G.generateTexture('__WHITE', 4, 4);
+    G.destroy();
   }
 
   private createPlayerSprite(key: string, skin: string) {

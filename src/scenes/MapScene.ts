@@ -57,12 +57,11 @@ export class MapScene extends Phaser.Scene {
   }
 
   create() {
-    // Fade in from black when entering map
-    this.cameras.main.fadeIn(400, 20, 40, 30);
-    buildMapSprites(this);
     this.cameras.main.setBackgroundColor(
       '#' + this.mapDef.bgColor.toString(16).padStart(6, '0')
     );
+    // Generate map object textures (portal, chest, building) — NOT added to display list
+    buildMapSprites(this);
     this.wallGroup = this.physics.add.staticGroup();
     this.portalGroup = this.physics.add.staticGroup();
     this.enemies = [];
