@@ -1,0 +1,23 @@
+{
+  "name": "pixelworld",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "server": "node server/index.ts",
+    "dev:full": "concurrently \"npm run dev\" \"npm run server\""
+  },
+  "dependencies": {
+    "phaser": "^3.80.1",
+    "colyseus.js": "^0.15.24"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11",
+    "@types/node": "^20.12.7",
+    "concurrently": "^8.2.2"
+  }
+}
