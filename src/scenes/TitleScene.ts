@@ -108,8 +108,8 @@ export class TitleScene extends Phaser.Scene {
 
     this.startBtn.on('pointerdown', () => {
       if (this.selectedIdx < 0) return;
-      this.cameras.main.fade(500, 0, 0, 0);
-      this.time.delayedCall(500, () => this.scene.start('MapScene'));
+      this.scene.stop('TitleScene');
+      this.scene.start('MapScene');
     });
 
     this.add.text(480, 600, 'WASD / Arrows: Move  |  ENTER: Battle  |  A: Attack  S: Skip', {

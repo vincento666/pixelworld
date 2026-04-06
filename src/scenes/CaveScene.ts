@@ -245,6 +245,7 @@ export class CaveScene extends Phaser.Scene {
   }
 
   update() {
+    if (!this.player) return;
     if (this.battlePending) { this.player.setVelocity(0, 0); return; }
     const left  = (this.cursors.left?.isDown  || this.wasd.left.isDown)  ? -1 : 0;
     const right = (this.cursors.right?.isDown || this.wasd.right.isDown) ?  1 : 0;

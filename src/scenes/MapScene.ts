@@ -57,6 +57,8 @@ export class MapScene extends Phaser.Scene {
   }
 
   create() {
+    // Fade in from black when entering map
+    this.cameras.main.fadeIn(400, 20, 40, 30);
     buildMapSprites(this);
     this.cameras.main.setBackgroundColor(
       '#' + this.mapDef.bgColor.toString(16).padStart(6, '0')
@@ -339,6 +341,7 @@ export class MapScene extends Phaser.Scene {
   }
 
   update() {
+    if (!this.player) return;
     if (this.battlePending) {
       this.player.setVelocity(0, 0);
       return;
