@@ -73,10 +73,12 @@ export class MapScene extends Phaser.Scene {
     this.createWalls();
     this.createPortals();
     this.createTreasures();
+    this.createBuildings();
     this.createPlayer();
     this.createEnemies();
     this.createHud();
     this.createInput();
+    this.createMapHint();
 
     this.physics.add.collider(this.player, this.wallGroup);
     this.enemies.forEach((ea) => {
@@ -312,6 +314,28 @@ export class MapScene extends Phaser.Scene {
       left:  this.input.keyboard!.addKey('A'),
       right: this.input.keyboard!.addKey('D'),
     };
+  }
+
+  private createMapHint() {
+    // Big control hint at bottom of screen
+    const panel = this.add.graphics();
+    panel.fillStyle(0x000000, 0.75);
+    panel.fillRect(0, 580, 960, 60);
+    this.add.text(480, 595, 'WASD / 方向键 移动    → 走向敌人自动进入战斗    → 传送门/宝箱/酒馆触发事件', {
+      fontFamily: 'Courier New', fontSize: '15px', color: '#ffffff',
+    }).setOrigin(0.5, 0.5);
+
+    // Map name
+    this.add.text(480, 50, '📍 ' + this.mapDef.name, {
+      fontFamily: 'Georgia', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
+      backgroundColor: '#00000088',
+    }).setOrigin(0.5, 0);
+
+    // Enemy count reminder
+    const alive = this.mapDef.enemies.length;
+    this.add.text(480, 80, '⚔ ' + alive + ' 个敌人在此区域', {
+      fontFamily: 'Courier New', fontSize: '14px', color: '#ffaa66',
+    }).setOrigin(0.5, 0);
   }
 
   update() {
