@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { sceneEvents, type BattleStartPayload } from '../game/events';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -30,7 +31,10 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('TitleScene');
+    sceneEvents.on('battleStart', this.handleBattleStart, this);
+    sceneEvents.on('battleWon', this.handleBattleWon, this);
+    this.scene.launch('MapScene');
+    this.scene.launch('UIScene');
   }
 
   private hexToInt(hex: string): number {
@@ -44,6 +48,30 @@ export class BootScene extends Phaser.Scene {
 
     // ---- Enemy: Goblin ----
     this.createGoblinSprite('enemy_goblin');
+  }
+
+  private handleBattleStart(payload: BattleStartPayload) {
+    if (this.scene.isActive('BattleScene')) {
+      return;
+    }
+
+    if (this.scene.isActive('MapScene')) {
+      this.scene.pause('MapScene');
+    }
+
+    this.scene.launch('BattleScene', {
+      enemy: payload.enemy,
+    });
+  }
+
+  private handleBattleWon() {
+    if (this.scene.isActive('BattleScene')) {
+      this.scene.stop('BattleScene');
+    }
+
+    if (this.scene.isPaused('MapScene')) {
+      this.scene.resume('MapScene');
+    }
   }
 
   private createPlayerSprite(key: string, skin: string) {

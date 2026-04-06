@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelWorld 素材清单</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Courier New', monospace; background: #0d1624; color: #e5f0ff; min-height: 100vh; padding: 32px 16px; }
+  .container { max-width: 900px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 40px; padding: 24px; background: #111f32; border-radius: 12px; border: 1px solid #31435e; }
+  h1 { font-size: 28px; color: #ffd700; margin-bottom: 8px; }
+  .subtitle { color: #9eb3c7; font-size: 14px; }
+  h2 { font-size: 18px; color: #88ccff; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #31435e; }
+  h3 { font-size: 14px; color: #73a8ff; margin: 20px 0 12px; }
+  .meta { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: #9eb3c7; }
+  .tag { background: #1a2a4a; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+  .tag.high { background: #2a4a1a; color: #4ad66d; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+  th { background: #1a2a4a; color: #88ccff; padding: 8px 10px; text-align: left; font-size: 12px; }
+  td { padding: 7px 10px; border-bottom: 1px solid #1a2a3a; vertical-align: middle; }
+  tr:hover td { background: #111f32; }
+  .filename { color: #71e6a3; font-size: 12px; }
+  .desc { color: #9eb3c7; }
+  .status { text-align: center; }
+  .badge { display: inline-block; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #31435e; }
+  .badge.done { background: #4ad66d; border-color: #4ad66d; }
+  .badge.pending { background: transparent; border-color: #f5b642; }
+  .naming { background: #111f32; border-radius: 8px; padding: 16px; margin-bottom: 24px; border: 1px solid #31435e; }
+  .naming-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-top: 12px; }
+  .naming-item { background: #1a2a4a; padding: 6px 10px; border-radius: 6px; font-size: 11px; color: #71e6a3; }
+  .priority-star { color: #ffd700; }
+  .section-note { font-size: 12px; color: #6e7177; margin-bottom: 12px; font-style: italic; }
+  footer { text-align: center; margin-top: 48px; padding: 20px; color: #6e7177; font-size: 12px; border-top: 1px solid #1a2a3a; }
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; }
+  .stat { background: #1a2a4a; padding: 8px 16px; border-radius: 8px; text-align: center; }
+  .stat-num { font-size: 22px; color: #ffd700; }
+  .stat-label { font-size: 11px; color: #9eb3c7; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>🎮 PixelWorld 素材清单</h1>
+  <div class="subtitle">v0.4 · 2026-04-06 · 团队协作版本</div>
+  <div class="meta">
+    <span class="tag high">⭐ 高优先级：角色精灵</span>
+    <span class="tag high">⭐ 高优先级：卡牌图案</span>
+    <span class="tag">中优先：特效 + UI</span>
+    <span class="tag">低优先：音频</span>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-num">53</div><div class="stat-label">总素材项</div></div>
+    <div class="stat"><div class="stat-num">7</div><div class="stat-label">角色精灵</div></div>
+    <div class="stat"><div class="stat-num">7</div><div class="stat-label">卡牌图案</div></div>
+    <div class="stat"><div class="stat-num">11</div><div class="stat-label">地图瓦片</div></div>
+    <div class="stat"><div class="stat-num">12</div><div class="stat-label">特效</div></div>
+    <div class="stat"><div class="stat-num">9</div><div class="stat-label">UI</div></div>
+  </div>
+</header>
+
+<div class="naming">
+  <strong>📌 命名规范</strong>：`[类别前缀]_[主题]_[名称]_[状态].[扩展名]`
+  <div class="naming-grid">
+    <div class="naming-item">char_ 角色</div>
+    <div class="naming-item">tile_ 瓦片</div>
+    <div class="naming-item">ui_ UI</div>
+    <div class="naming-item">fx_ 特效</div>
+    <div class="naming-item">bg_ 背景</div>
+    <div class="naming-item">icon_ 图标</div>
+    <div class="naming-item">card_ 卡牌</div>
+    <div class="naming-item">bgm_ BGM</div>
+    <div class="naming-item">sfx_ 音效</div>
+  </div>
+</div>
+
+<h2>🧌 角色精灵 Character Sprites</h2>
+<p class="section-note">规格：PNG / 透明背景 / 建议 128×128</p>
+<table>
+  <thead><tr><th>文件名</th><th>说明</th><th>尺寸</th><th>优先级</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="filename">char_player_hero</td><td>玩家主角（默认皮肤）</td><td>128×128</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">char_player_hero_blue</td><td>玩家蓝皮肤（配色变体）</td><td>128×128</td><td>中</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">char_enemy_goblin_grunt</td><td>哥布林战士 · 绿色持武</td><td>128×128</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">char_enemy_goblin_archer</td><td>哥布林弓箭手 · 背弓姿态</td><td>128×128</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">char_enemy_goblin_shaman</td><td>哥布林萨满 · 带杖有光环</td><td>128×128</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">char_enemy_goblin_dead</td><td>哥布林死亡状态（灰度）</td><td>128×128</td><td>中</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">char_boss_troll</td><td>巨石魔 Boss（预留）</td><td>256×256</td><td>低</td><td class="status"><span class="badge"></span></td></tr>
+  </tbody>
+</table>
+
+<h2>🃏 卡牌图案 Card Art</h2>
+<p class="section-note">规格：PNG / 透明背景 / 建议 160×120</p>
+<table>
+  <thead><tr><th>文件名</th><th>说明</th><th>元素</th><th>优先级</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="filename">card_strike</td><td>Strike（物理攻击）</td><td>物理</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">card_fireball</td><td>Fireball（火球术）</td><td>火</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">card_ice_spike</td><td>Ice Spike（冰刺术）</td><td>冰</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">card_thunder</td><td>Thunder（雷击术）</td><td>雷</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">card_wind_slash</td><td>Wind Slash（风刃术）</td><td>风</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">card_heal</td><td>Heal（治疗术）</td><td>无</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">card_defend</td><td>Defend（防御姿态）</td><td>无</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+  </tbody>
+</table>
+
+<h2>🗺️ 地图瓦片 Map Tiles</h2>
+<p class="section-note">规格：PNG / 透明背景 / 瓦片 64×64（树木高 64×128）</p>
+<table>
+  <thead><tr><th>文件名</th><th>说明</th><th>尺寸</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="filename">tile_grass_light</td><td>浅草地</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_grass_dark</td><td>深草地</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_wall_stone</td><td>石墙</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_wall_ruin</td><td>遗迹墙</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_path_dirt</td><td>泥土路</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_water</td><td>水面</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_tree</td><td>树木</td><td>64×128</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_rock</td><td>岩石</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_chest</td><td>宝箱</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_door</td><td>门</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">tile_portal</td><td>传送门</td><td>128×128</td><td class="status"><span class="badge"></span></td></tr>
+  </tbody>
+</table>
+
+<h2>⚔️ 特效 Effects</h2>
+<p class="section-note">规格：PNG序列帧（4-8帧）或 WebM / 透明背景</p>
+<table>
+  <thead><tr><th>文件名</th><th>说明</th><th>尺寸</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="filename">fx_fire_hit</td><td>火焰命中特效</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_ice_hit</td><td>冰霜命中特效</td><td>64×64</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_thunder_hit</td><td>雷击特效</td><td>128×128</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_heal_aura</td><td>治疗光环</td><td>96×96</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_vaporize</td><td>蒸发反应特效</td><td>96×96</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_melt</td><td>融化反应特效</td><td>96×96</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_chain</td><td>链式反应特效</td><td>128×128</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_freeze</td><td>冻结反应特效</td><td>96×96</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_shock</td><td>感电反应特效</td><td>96×96</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_guard</td><td>防御姿态光盾</td><td>96×96</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_damage_number</td><td>伤害数字（通用）</td><td>64×32</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">fx_death</td><td>敌人死亡特效</td><td>96×96</td><td class="status"><span class="badge"></span></td></tr>
+  </tbody>
+</table>
+
+<h2>🖥️ UI 元素 UI Assets</h2>
+<p class="section-note">规格：PNG / 透明背景</p>
+<table>
+  <thead><tr><th>文件名</th><th>说明</th><th>尺寸</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="filename">ui_hp_bar</td><td>血条背景+边框</td><td>220×18</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_mp_bar</td><td>蓝条背景+边框</td><td>220×14</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_card_frame</td><td>卡牌外框（选中态）</td><td>160×120</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_card_frame_normal</td><td>卡牌外框（普通态）</td><td>160×120</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_turn_indicator</td><td>回合指示框</td><td>176×36</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_button_restart</td><td>重开按钮</td><td>180×46</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_panel_dark</td><td>深色面板</td><td>360×220</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_panel_gameover</td><td>GameOver 面板</td><td>360×220</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">ui_hand_bg</td><td>手牌区域背景</td><td>960×148</td><td class="status"><span class="badge"></span></td></tr>
+  </tbody>
+</table>
+
+<h2>🌍 图标 Icons</h2>
+<p class="section-note">规格：PNG / 透明背景 / 32×32</p>
+<table>
+  <thead><tr><th>文件名</th><th>说明</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="filename">icon_fire</td><td>火元素图标</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_ice</td><td>冰元素图标</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_thunder</td><td>雷元素图标</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_wind</td><td>风元素图标</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_water</td><td>水元素图标</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_physical</td><td>物理图标（拳头）</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_hp</td><td>生命值图标</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_mp</td><td>魔法值图标</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">icon_shield</td><td>防御图标</td><td class="status"><span class="badge"></span></td></tr>
+  </tbody>
+</table>
+
+<h2>🔊 音频素材 Audio</h2>
+<p class="section-note">格式：MP3 / OGG</p>
+<table>
+  <thead><tr><th>文件名</th><th>说明</th><th>时长</th><th>优先级</th><th>状态</th></tr></thead>
+  <tbody>
+    <tr><td class="filename">bgm_battle</td><td>战斗 BGM（循环）</td><td>循环</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">bgm_map</td><td>地图探索 BGM（循环）</td><td>循环</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_enemy_hit</td><td>敌人受击音效</td><td>~0.3s</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_player_hit</td><td>玩家受击音效</td><td>~0.3s</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_victory</td><td>胜利音效</td><td>~2s</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_defeat</td><td>失败音效</td><td>~2s</td><td><span class="priority-star">⭐⭐⭐</span></td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_card_draw</td><td>抽卡音效</td><td>~0.3s</td><td>中</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_card_play</td><td>出牌音效</td><td>~0.5s</td><td>中</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_fire</td><td>火系攻击音效</td><td>~1s</td><td>中</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_ice</td><td>冰系攻击音效</td><td>~1s</td><td>中</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_thunder</td><td>雷系攻击音效</td><td>~1s</td><td>中</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_heal</td><td>治疗音效</td><td>~1s</td><td>低</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_step_grass</td><td>草地脚步声</td><td>~0.2s</td><td>低</td><td class="status"><span class="badge"></span></td></tr>
+    <tr><td class="filename">sfx_chest_open</td><td>宝箱开启音效</td><td>~0.5s</td><td>低</td><td class="status"><span class="badge"></span></td></tr>
+  </tbody>
+</table>
+
+<footer>
+  <p>由 PixelWorld Agent 自动生成 · 最后更新：2026-04-06</p>
+  <p>存放路径：/workspace/pixelworld/assets/ASSET_LIST.md</p>
+</footer>
+
+</div>
+</body>
+</html>
